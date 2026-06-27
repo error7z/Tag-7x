@@ -1,0 +1,462 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P7M ULTRA | Enterprise Delivery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --rb: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff); }
+        body { background-color: #030406; color: #f1f5f9; font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; }
+        .premium-border { position: relative; padding: 1px; background: var(--rb); background-size: 300% 300%; animation: rb-move 4s linear infinite; border-radius: 16px; }
+        @keyframes rb-move { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .glass-card { background: rgba(10, 11, 16, 0.98); backdrop-filter: blur(20px); border-radius: 15px; border: 1px solid rgba(255,255,255,0.03); }
+        .input-glow { background: #08090d; border: 1px solid #1e293b; color: #fff; padding: 10px; border-radius: 8px; outline: none; transition: 0.3s; width: 100%; font-size: 12px; }
+        .input-glow:focus { border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.1); }
+        .btn-action { transition: 0.2s; cursor: pointer; }
+        .btn-action:hover { opacity: 0.8; transform: translateY(-1px); }
+        #log-container { height: 400px; overflow-y: auto; }
+        .custom-scroll::-webkit-scrollbar { width: 3px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #1e293b; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="p-4">
+    <div class="max-w-[1900px] mx-auto grid grid-cols-12 gap-6">
+        <!-- LEFT COLUMN -->
+        <div class="col-span-3 space-y-4">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg></div>
+                    <h1 class="text-xl font-black tracking-tighter uppercase">P7M <span class="text-blue-500">ULTRA</span></h1>
+                </div>
+                <!-- TAGS SHOW TOGGLE BUTTON -->
+                <button onclick="toggleTagsDrawer()" class="bg-gradient-to-r from-purple-600 to-indigo-600 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider btn-action shadow-md">TAGS Show</button>
+            </div>
+
+            <div class="premium-border">
+                <div class="glass-card p-4 space-y-3">
+                    <p class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Intelligence Hub (Proxy)</p>
+                    <div class="flex items-center justify-between bg-black/40 p-3 rounded-lg border border-white/5">
+                        <span class="text-[10px] text-zinc-400 uppercase font-bold">Tunnel Status:</span>
+                        <div id="proxy-status-light" class="w-3 h-3 rounded-full bg-red-600 shadow-[0_0_5px_red]"></div>
+                    </div>
+                    <button onclick="connectServerProxy()" class="w-full bg-blue-600 py-3 rounded text-[10px] font-black uppercase btn-action tracking-widest">Establish Connection</button>
+                    <div id="ip-details" class="bg-black/50 p-3 rounded-lg text-[10px] font-mono space-y-1 min-h-[100px]">
+                        <p class="text-zinc-500">Standby for Analysis...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="premium-border">
+                <div class="glass-card p-4 space-y-3">
+                    <p class="text-[10px] font-black text-orange-400 uppercase tracking-widest">Protocol Strategy</p>
+                    <select id="rotation-mode" class="input-glow save-data" onchange="toggleBatchInput()">
+                        <option value="1-by-1">1-BY-1 (Sequential)</option>
+                        <option value="random">Random (Chaos Mode)</option>
+                        <option value="continuous">Continuously Send (Batch)</option>
+                    </select>
+                    <div id="batch-container" class="hidden">
+                        <input type="number" id="batch-count" value="10" placeholder="Batch Size" class="input-glow save-data text-[10px]">
+                    </div>
+                    <input type="number" id="send-delay" placeholder="Delay Time (MS)" value="3000" class="input-glow save-data">
+                </div>
+            </div>
+
+            <div class="glass-card p-5 border-b-4 border-blue-600">
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-zinc-900 p-3 rounded-xl text-center"><span class="text-[9px] text-zinc-500 uppercase font-bold">Inbox</span><p id="v-sent" class="text-3xl font-black text-green-500">0</p></div>
+                    <div class="bg-zinc-900 p-3 rounded-xl text-center"><span class="text-[9px] text-zinc-500 uppercase font-bold">Block</span><p id="v-fail" class="text-3xl font-black text-red-500">0</p></div>
+                </div>
+                <button onclick="launch()" id="btn-start" class="w-full bg-blue-600 py-4 rounded-xl font-black text-xs uppercase tracking-widest btn-action">Initiate Blast</button>
+                <button onclick="forceStop()" id="btn-stop" class="w-full bg-red-900/20 text-red-500 border border-red-500/50 py-4 rounded-xl font-black text-xs uppercase hidden">Emergency Stop</button>
+            </div>
+        </div>
+
+        <!-- CENTER COLUMN (MAIN WORKSPACE) -->
+        <div class="col-span-6 space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="premium-border"><div class="glass-card p-4">
+                    <div class="flex justify-between mb-2"><span class="text-[10px] font-bold text-zinc-400 uppercase">SMTP Stack: <b id="count-smtp" class="text-blue-500">0</b></span><button onclick="clearData('smtps')" class="text-[9px] text-red-500 font-bold uppercase">Clear</button></div>
+                    <input type="file" id="f-smtp" accept=".csv" class="text-[10px] w-full text-zinc-500">
+                </div></div>
+                <div class="premium-border"><div class="glass-card p-4">
+                    <div class="flex justify-between mb-2"><span class="text-[10px] font-bold text-zinc-400 uppercase">Targets: <b id="count-target" class="text-green-500">0</b></span><button onclick="clearData('targets')" class="text-[9px] text-red-500 font-bold uppercase">Clear</button></div>
+                    <input type="file" id="f-target" accept=".csv" class="text-[10px] w-full text-zinc-500">
+                </div></div>
+            </div>
+
+            <div class="premium-border">
+                <div class="glass-card p-5 space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="text" id="s-name" placeholder="Sender Name" class="input-glow save-data">
+                        <input type="text" id="s-sub" placeholder="Subject Line" class="input-glow save-data">
+                    </div>
+                    <textarea id="plain-body" class="input-glow h-20 save-data" placeholder="Plain Text Layer (Optional)"></textarea>
+
+                    <div class="bg-blue-900/10 p-4 rounded-xl grid grid-cols-3 gap-3">
+                        <div class="col-span-2"><input type="text" id="btn-url" placeholder="Redirect URL" class="input-glow save-data"></div>
+                        <div class="space-y-1">
+                            <input type="text" id="btn-text" placeholder="Button Text" class="input-glow save-data">
+                            <select id="btn-size" class="input-glow text-[9px] p-1 save-data">
+                                <option value="12px">Small</option>
+                                <option value="16px" selected>Normal</option>
+                                <option value="20px">Large</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <textarea id="s-body" oninput="updatePreview()" class="input-glow font-mono text-[10px] h-[300px] custom-scroll save-data" placeholder="HTML Payload Code..."></textarea>
+                        <div class="bg-white rounded-lg overflow-hidden h-[300px] border border-zinc-800"><iframe id="p-frame" class="w-full h-full border-0"></iframe></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN (MONITOR) -->
+        <div class="col-span-3">
+            <div class="glass-card h-full flex flex-col">
+                <div class="p-4 border-b border-white/5 flex justify-between items-center">
+                    <h3 class="text-[10px] font-black text-zinc-500 tracking-[3px] uppercase">Analytics Monitor</h3>
+                    <button onclick="document.getElementById('log').innerHTML=''" class="text-[9px] text-red-500 font-bold uppercase">Wipe</button>
+                </div>
+                <div id="log-container" class="p-4 custom-scroll"><div id="log" class="space-y-2 font-mono text-[9px]"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW ACCORDION/DRAWER FOR DYNAMIC TAGS SYSTEM -->
+    <div id="tags-drawer" class="fixed top-0 right-0 w-[420px] h-full bg-[#07090e] border-l border-zinc-800 z-50 transform translate-x-full transition-transform duration-300 flex flex-col shadow-2xl">
+        <div class="p-4 border-b border-zinc-800 flex justify-between items-center bg-black/40">
+            <h2 class="text-sm font-black text-purple-400 tracking-wider uppercase">DYNAMIC TAG ENGINE</h2>
+            <button onclick="toggleTagsDrawer()" class="text-xs text-zinc-500 hover:text-white font-bold">✕ Close</button>
+        </div>
+        
+        <div class="p-4 flex-1 overflow-y-auto custom-scroll space-y-5">
+            <!-- CUSTOM ENGINE DESIGNER -->
+            <div class="p-4 rounded-xl bg-purple-950/20 border border-purple-500/20 space-y-3">
+                <p class="text-[10px] font-black text-purple-400 uppercase tracking-widest">Construct New Macro Tag</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[9px] text-zinc-400 block mb-1 font-bold">Tag Key Name</label>
+                        <div class="relative flex items-center">
+                            <span class="absolute left-2 text-zinc-500 text-xs">$</span>
+                            <input type="text" id="cust-tag-name" placeholder="custom4" class="input-glow pl-5 text-[11px]">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[9px] text-zinc-400 block mb-1 font-bold">Total Length</label>
+                        <input type="number" id="cust-tag-len" value="8" min="1" max="64" class="input-glow text-[11px]">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-1 bg-black/40 p-2 rounded border border-white/5">
+                    <label class="flex items-center gap-1 text-[9px] font-bold"><input type="checkbox" id="cust-upper" checked> A-Z</label>
+                    <label class="flex items-center gap-1 text-[9px] font-bold"><input type="checkbox" id="cust-lower" checked> a-z</label>
+                    <label class="flex items-center gap-1 text-[9px] font-bold"><input type="checkbox" id="cust-num" checked> 0-9</label>
+                </div>
+                <button onclick="saveCustomTag()" class="w-full bg-purple-600 py-2 rounded text-[10px] font-black uppercase tracking-wider btn-action">Inject Tag Rule</button>
+            </div>
+
+            <!-- LIVE MONITORED TAG CHEAT SHEET -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <p class="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Active System Inventory</p>
+                    <button onclick="renderTagsTable()" class="text-[9px] text-zinc-500 underline font-mono">Cycle Previews</button>
+                </div>
+                <div class="border border-zinc-800 rounded-lg overflow-hidden text-[10px]">
+                    <table class="w-full text-left font-mono">
+                        <thead class="bg-zinc-900 text-zinc-400 text-[9px]">
+                            <tr>
+                                <th class="p-2 border-b border-zinc-800">Tag Key</th>
+                                <th class="p-2 border-b border-zinc-800">Dynamic Sample Output</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tags-table-body" class="divide-y divide-zinc-800/50 bg-black/20">
+                            <!-- Populated instantly via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let smtps = [], targets = [], sent = 0, fail = 0, isRunning = false;
+        let smtpPointer = 0, batchTracker = 0;
+        let customTags = []; // Array tracking user constructed macros
+
+        const defaultTagsDoc = [
+            { name: "word4", desc: "4 Upper Letters" }, { name: "word6", desc: "6 Lower Letters" },
+            { name: "mix5", desc: "5 Mixed Letters" }, { name: "string10", desc: "10 Upper Letters" },
+            { name: "num4", desc: "4 Random Digits" }, { name: "num6", desc: "6 Random Digits" },
+            { name: "num9", desc: "9 Random Digits" }, { name: "amount", desc: "Random Price (10.00-200.00)" },
+            { name: "random6", desc: "6 Alphanumeric Mixed" }, { name: "random8", desc: "8 Upper Alphanumeric" },
+            { name: "random12", desc: "12 Lower Alphanumeric" }, { name: "uuid", desc: "36 Char Unique UUID ID" },
+            { name: "date", desc: "Current YYYY-MM-DD" }, { name: "timestamp", desc: "Unix Timestamp" },
+            { name: "time", desc: "Current HH:MM Format" }, { name: "year", desc: "Current 4-Digit Year" },
+            { name: "os", desc: "Random Device OS" }, { name: "browser", desc: "Random Modern Browser" },
+            { name: "country", desc: "Random Global Country" }, { name: "rs", desc: "Random Subject Line Prefix" }
+        ];
+
+        function toggleTagsDrawer() {
+            const drawer = document.getElementById('tags-drawer');
+            drawer.classList.toggle('translate-x-full');
+            if(!drawer.classList.contains('translate-x-full')) { renderTagsTable(); }
+        }
+
+        function toggleBatchInput() {
+            const mode = document.getElementById('rotation-mode').value;
+            document.getElementById('batch-container').classList.toggle('hidden', mode !== 'continuous');
+        }
+
+        async function connectServerProxy() {
+            const light = document.getElementById('proxy-status-light');
+            const display = document.getElementById('ip-details');
+            light.className = "w-3 h-3 rounded-full bg-yellow-500 animate-pulse shadow-[0_0_10px_orange]";
+            display.innerHTML = '<span class="animate-pulse text-blue-400 font-bold uppercase text-[9px]">GATHERING SERVER INTEL...</span>';
+            try {
+                const res = await fetch('/api/check-proxy', { method: 'POST', headers: {'Content-Type': 'application/json'} });
+                const data = await res.json();
+                if (data.success) {
+                    light.className = "w-3 h-3 rounded-full bg-green-500 shadow-[0_0_15px_#22c55e]";
+                    display.innerHTML = `<div>IP: <span class="text-white">${data.ip}</span></div><div class="truncate">ISP: ${data.isp}</div><div>LOC: ${data.city}, ${data.country}</div>`;
+                } else throw new Error(data.error);
+            } catch (e) {
+                light.className = "w-3 h-3 rounded-full bg-red-600 shadow-[0_0_10px_red]";
+                display.innerHTML = `<span class="text-red-500">Handshake Failed</span>`;
+            }
+        }
+
+        function clearData(type) {
+            if(type === 'smtps') { smtps = []; document.getElementById('count-smtp').innerText = 0; }
+            else { targets = []; document.getElementById('count-target').innerText = 0; }
+        }
+
+        document.getElementById('f-smtp').onchange = e => handleCSV(e, 'smtp');
+        document.getElementById('f-target').onchange = e => handleCSV(e, 'target');
+
+        function handleCSV(e, type) {
+            Papa.parse(e.target.files[0], { skipEmptyLines: true, complete: r => {
+                const newData = r.data.filter(row => row.length > 0);
+                if(type === 'smtp') { smtps = [...smtps, ...newData]; document.getElementById('count-smtp').innerText = smtps.length; }
+                else { targets = [...targets, ...newData]; document.getElementById('count-target').innerText = targets.length; }
+            }});
+        }
+
+        function updatePreview() { document.getElementById('p-frame').srcdoc = assemblePayloadString(); saveAllData(); }
+
+        function assemblePayloadString() {
+            const plain = document.getElementById('plain-body').value;
+            let htmlContent = document.getElementById('s-body').value;
+            const btnUrl = document.getElementById('btn-url').value;
+            const btnText = document.getElementById('btn-text').value;
+
+            const fontMatrix = ['Arial','Verdana','Tahoma','Trebuchet MS','Times New Roman','Georgia','Garamond','Courier New','Palatino','Bookman','Helvetica','Calibri','Candara','Optima','Segoe UI','Century Gothic','Futura','Gill Sans','Baskerville','Cambria','Constantia','Rockwell','Consolas','Open Sans','Roboto','Lato','Montserrat','Oswald','Raleway','Merriweather','Noto Sans','Playfair Display'];
+            const hideStyle = "display:none !important; visibility:hidden !important; mso-hide:all !important; font-size:0px !important; line-height:0px !important; max-height:0px !important; color:transparent !important; opacity:0 !important; overflow:hidden !important;";
+
+            const generateInvisibleNoise = (count) => {
+                let noise = "";
+                for(let i=0; i < count; i++) { 
+                    noise += Math.random().toString(36).substring(2, 9) + " " + (Math.random() * 9999).toFixed(0) + " ";
+                }
+                return `<div style="${hideStyle}">${noise}</div>`;
+            };
+
+            const randomizeWordStructure = (text) => {
+                if (!text) return "";
+                return text.split(' ').map(word => {
+                    const font = fontMatrix[Math.floor(Math.random() * fontMatrix.length)];
+                    const size = (13 + Math.random() * 2).toFixed(2) + 'px';
+                    const ghost = `<span style="${hideStyle}">${Math.random().toString(36).substring(2, 4)}</span>`;
+                    return `<span style="font-family:${font}; font-size:${size};">${word}${ghost}</span>`;
+                }).join(' ');
+            };
+
+            let buttonHtml = "";
+            if(btnUrl && btnText) {
+                buttonHtml = `<div style="text-align:center; margin:20px 0;"><a href="${btnUrl}" style="background-color:#3b82f6; color:#ffffff; padding:12px 25px; text-decoration:none; border-radius:6px; font-family:Arial, sans-serif; font-size:16px; font-weight:bold; display:inline-block;">${btnText}</a></div>`;
+            }
+
+            return `
+                ${generateInvisibleNoise(150)}
+                <div style="color:#000000; background-color:#ffffff; font-size:14px; line-height:1.5; margin:0 auto; max-width:600px;">
+                    <div style="padding:10px;">${randomizeWordStructure(plain)}</div>
+                    <div style="display:block;">
+                        ${htmlContent.includes('{{LINK_BUTTON}}') ? htmlContent.replace('{{LINK_BUTTON}}', buttonHtml) : (htmlContent + buttonHtml)}
+                    </div>
+                </div>
+                ${generateInvisibleNoise(150)}
+            `;
+        }
+
+        // GENERATE LOCAL PREVIEW SAMPLES IN THE DRAWERS
+        function runMockStringGen(len, upper, lower, num) {
+            let pool = "";
+            if(upper) pool += "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            if(lower) pool += "abcdefghijklmnopqrstuvwxyz";
+            if(num) pool += "01234506789";
+            if(!pool) return "Empty Rule";
+            let out = "";
+            for(let i=0; i<len; i++) out += pool.charAt(Math.floor(Math.random() * pool.length));
+            return out;
+        }
+
+        function renderTagsTable() {
+            const tbody = document.getElementById('tags-table-body');
+            tbody.innerHTML = "";
+
+            // 1. Render Defaults
+            defaultTagsDoc.forEach(item => {
+                let sampleVal = "";
+                if(item.name === "word4") sampleVal = runMockStringGen(4, true, false, false);
+                else if(item.name === "word6") sampleVal = runMockStringGen(6, false, true, false);
+                else if(item.name === "mix5") sampleVal = runMockStringGen(5, true, true, false);
+                else if(item.name === "string10") sampleVal = runMockStringGen(10, true, false, false);
+                else if(item.name === "num4") sampleVal = runMockStringGen(4, false, false, true);
+                else if(item.name === "num6") sampleVal = sampleVal = runMockStringGen(6, false, false, true);
+                else if(item.name === "num9") sampleVal = runMockStringGen(9, false, false, true);
+                else if(item.name === "amount") sampleVal = (45 + Math.random() * 110).toFixed(2);
+                else if(item.name === "random6") sampleVal = runMockStringGen(6, true, true, true);
+                else if(item.name === "random8") sampleVal = runMockStringGen(8, true, false, true);
+                else if(item.name === "random12") sampleVal = runMockStringGen(12, false, true, true);
+                else if(item.name === "uuid") sampleVal = "f81d4fae-7dec-11d0-a765-00a0c91e6bf6";
+                else if(item.name === "date") sampleVal = new Date().toISOString().split('T')[0];
+                else if(item.name === "timestamp") sampleVal = Math.floor(Date.now()/1000);
+                else if(item.name === "time") sampleVal = new Date().toTimeString().split(' ')[0].substring(0,5);
+                else if(item.name === "year") sampleVal = "2026";
+                else if(item.name === "os") sampleVal = "Windows 11 Enterprise";
+                else if(item.name === "browser") sampleVal = "Chrome/124.0.0";
+                else if(item.name === "country") sampleVal = "United States";
+                else if(item.name === "rs") sampleVal = "Re: ";
+
+                const row = document.createElement('tr');
+                row.innerHTML = `<td class="p-2 text-purple-400 font-bold font-mono">$${item.name}</td><td class="p-2 text-zinc-300 font-mono">${sampleVal} <span class="text-[9px] text-zinc-500 block">(${item.desc})</span></td>`;
+                tbody.appendChild(row);
+            });
+
+            // 2. Render Custom Configured User Rules
+            customTags.forEach((ct, index) => {
+                const sampleVal = runMockStringGen(parseInt(ct.len), ct.upper, ct.lower, ct.num);
+                const row = document.createElement('tr');
+                row.className = "bg-purple-950/10";
+                row.innerHTML = `
+                    <td class="p-2 text-emerald-400 font-bold font-mono">$${ct.name}</td>
+                    <td class="p-2 text-zinc-300 font-mono flex justify-between items-center">
+                        <div>${sampleVal} <span class="text-[8px] text-zinc-500 block">(Custom Length: ${ct.len})</span></div>
+                        <button onclick="removeCustomTag(${index})" class="text-[9px] text-red-500 hover:underline">Delete</button>
+                    </td>`;
+                tbody.appendChild(row);
+            });
+        }
+
+        function saveCustomTag() {
+            let nameInput = document.getElementById('cust-tag-name').value.trim().replace(/[^a-zA-Z0-String0-9]/g, "");
+            const lenInput = parseInt(document.getElementById('cust-tag-len').value) || 8;
+            const upper = document.getElementById('cust-upper').checked;
+            const lower = document.getElementById('cust-lower').checked;
+            const num = document.getElementById('cust-num').checked;
+
+            if(!nameInput) return alert("Give your Custom Tag a name first!");
+            if(!upper && !lower && !num) return alert("Select at least one character set check box!");
+
+            // Prevent duplicating default tags
+            if(defaultTagsDoc.some(d => d.name === nameInput)) {
+                return alert("This name matches a protected system keyword!");
+            }
+
+            // Remove existing version if name updated
+            customTags = customTags.filter(t => t.name !== nameInput);
+
+            customTags.push({ name: nameInput, len: lenInput, upper, lower, num });
+            document.getElementById('cust-tag-name').value = "";
+            
+            saveAllData();
+            renderTagsTable();
+        }
+
+        function removeCustomTag(idx) {
+            customTags.splice(idx, 1);
+            saveAllData();
+            renderTagsTable();
+        }
+
+        async function launch() {
+            if(!smtps.length || !targets.length) return alert("LOAD DATABASES");
+            sent = 0; fail = 0; updateStats(); isRunning = true; toggleUI(true);
+            smtpPointer = 0; batchTracker = 0;
+
+            for(let i=0; i < targets.length; i++) {
+                if(!isRunning) break;
+                const mode = document.getElementById('rotation-mode').value;
+                const batchSize = parseInt(document.getElementById('batch-count').value) || 10;
+                let currentSmtp;
+
+                if(mode === 'random') currentSmtp = smtps[Math.floor(Math.random() * smtps.length)];
+                else if(mode === 'continuous') {
+                    currentSmtp = smtps[smtpPointer % smtps.length];
+                    batchTracker++;
+                    if(batchTracker >= batchSize) { smtpPointer++; batchTracker = 0; }
+                } else currentSmtp = smtps[i % smtps.length];
+
+                const payload = {
+                    smtpConfig: { user: currentSmtp[0], pass: currentSmtp[1], host: 'smtp.gmail.com', port: 465 },
+                    mailData: { 
+                        fromName: document.getElementById('s-name').value,
+                        to: targets[i][0], 
+                        subject: document.getElementById('s-sub').value, 
+                        html: assemblePayloadString(),
+                        plainLayerText: document.getElementById('plain-body').value 
+                    },
+                    customTagsConfig: customTags // Passing your custom tags configuration schema over to the Vercel API
+                };
+
+                try {
+                    const res = await fetch('/api/send', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                    const result = await res.json();
+                    if(res.ok && result.success) { sent++; addLog(`SUCCESS: ${targets[i][0]}`, "text-green-400"); }
+                    else { fail++; addLog(`BLOCK: ${targets[i][0]} - ${result.error || 'Unknown Error'}`, "text-red-500"); }
+                } catch (err) { fail++; }
+                updateStats();
+                await new Promise(r => setTimeout(r, parseInt(document.getElementById('send-delay').value)));
+            }
+            isRunning = false; toggleUI(false);
+        }
+
+        function forceStop() { isRunning = false; toggleUI(false); }
+        function toggleUI(r) { document.getElementById('btn-start').classList.toggle('hidden', r); document.getElementById('btn-stop').classList.toggle('hidden', !r); }
+        function updateStats() { document.getElementById('v-sent').innerText = sent; document.getElementById('v-fail').innerText = fail; }
+        function addLog(msg, color) {
+            const div = document.createElement('div');
+            div.className = color;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            document.getElementById('log').prepend(div);
+        }
+
+        function saveAllData() {
+            const data = {};
+            document.querySelectorAll('.save-data').forEach(el => data[el.id] = el.value);
+            // Save custom created tags list alongside state configuration
+            data['p7m_custom_macro_tags'] = customTags;
+            localStorage.setItem('p7m_ultra_v3', JSON.stringify(data));
+        }
+
+        window.onload = () => {
+            const saved = localStorage.getItem('p7m_ultra_v3');
+            if(saved) {
+                const data = JSON.parse(saved);
+                Object.keys(data).forEach(k => { 
+                    if(document.getElementById(k)) document.getElementById(k).value = data[k]; 
+                });
+                if(data['p7m_custom_macro_tags']) {
+                    customTags = data['p7m_custom_macro_tags'];
+                }
+                updatePreview(); toggleBatchInput();
+            }
+        };
+    </script>
+</body>
+</html>
